@@ -1,0 +1,31 @@
+public class Listener extends jIRCListener {
+    public static ArrayList<String> hosts = new ArrayList<String>();
+
+
+    public static void init() {
+        File f = new File("dat/warnings.dat");
+        if(!f.exists())
+            return;
+        BufferedReader br = new BufferedReader(new FileReader(f));
+        String line;
+        while((line = br.readLine()) != null)
+            hosts.add(line);
+        br.close();
+    }
+
+    public static void save() {
+        PrintStream out = new PrintStream("dat/warnings.dat");
+        for(String s: hosts)
+            out.println(s);
+        out.close();
+    }
+    
+    public void onJoin(String channel, String sender, String login, String hostname) {
+        if(!hosts.contains(hostname)) {
+            _inst.sendMessage(channel, sender + ": ALL private server/moparscape questions are to go to http://www.moparscape.org/smf, NOT HERE. You have been warned.");
+            hosts.add(hostname);
+            save();
+        }
+    }
+}
+_inst.addListener(new Listener());

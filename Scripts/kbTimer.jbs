@@ -1,0 +1,5 @@
+int mins = "$2".equals("$$2")? 5: Integer.parseInt("$2");
+_inst.ban("$channel", "$1".equals("$$1") || "$1".equalsIgnoreCase(_inst.getNick())? "$host": _inst.myManager.get("$1", "$channel").getHost());
+_inst.kick("$channel", "$1".equals("$$1")? "$nick": "$1".equalsIgnoreCase(_inst.getNick())? "$nick": "$1", ("$3".equals("$$3")? "Requested ($nick)": "$02") + "(" + mins + " mins.)");
+Thread.sleep(mins * 60000);
+_inst.unBan("$channel", "$1".equals("$$1") || "$1".equalsIgnoreCase(_inst.getNick())? "$host": _inst.myManager.get("$1", "$channel").getHost());

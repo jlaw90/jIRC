@@ -1,0 +1,56 @@
+ArrayList clients = new ArrayList();
+
+public class Tester {
+    public Socket s;
+    public DataInputStream dis;
+
+    public void run() {
+        if(dis.available() > 0) {
+            byte[] data = new byte[(int) dis.available()];
+            dis.read(data);
+            String content = new String(data);
+            if(content.contains("QUIT"))
+                s.close();
+            clients.remove(this);
+        }
+    }
+}
+
+File f = new File("proxies.lst");
+DataInputStream dis = new DataInputStream(new FileInputStream(f));
+byte[] data = new byte[(int) f.length()];
+dis.readFully(data);
+dis.close();
+PrintStream ps = new PrintStream("working.lst");
+String[] lines = new String(data).split("\r\n");
+try {
+    InetSocketAddress mopar = new InetSocketAddress("irc.moparisthebest.com", 6667);
+    for(String s: lines) {
+        s = s.trim();
+        if(s.equals(""))
+            continue;
+        String[] k = s.split(":");
+        String host = k[0];
+        int port = Integer.parseInt(k[1]);
+        Proxy p;
+        Socket s;
+        try {
+            p = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(host, port));
+            s = new Socket(p);
+        } catch(Exception e) {}
+        if(p == null || s == null)
+            continue;
+        try{
+            s.connect(mopar);
+            PrintStream ps = new PrintStream(s.getOutputStream());
+            ps.println("NICK NodeTest" + s.hashCode());
+            ps.println("USER user user user user Millenia");
+            ps.println("JOIN ###test");
+            ps.println(host + ":" + port);
+        } catch (Exception e) {
+        }
+    }
+} catch(Exception e) {
+    echo(e.toString());
+}
+ps.close();

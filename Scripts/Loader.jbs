@@ -1,0 +1,359 @@
+public class Loader extends java.applet.Applet implements java.applet.AppletStub, WindowListener, ActionListener, java.applet.AppletContext, KeyListener {
+
+    private static  Properties params = new Properties();
+    private static  Properties configuration = new Properties();
+    private static  Properties browserconf = new Properties();
+    private static  boolean DEBUG = false;
+    private String referer = null;
+    private String prefix = null;
+    private java.applet.Applet rs;
+    private  Panel game = new Panel(new BorderLayout());
+    private Frame frame;
+    private static boolean isApplet = true;
+    protected static  String RUNESCAPE_COM_LANG_EN_AFF_RUNESCAPE = ".runescape.com/lang/en/aff/runescape/";
+    protected static  String RUNESCAPE_COM_LANG_EN_AFF_RUNESCAPE_GAME_WS_LOWMEM_1_PLUGIN_0 = ".runescape.com/lang/en/aff/runescape/game.ws?lowmem=1&plugin=0";
+
+
+    public static boolean isNumerical(String checkMe) {
+        if(checkMe == null)
+            return false;
+        char[] chars = checkMe.toCharArray();
+        if(chars.length < 1)
+            return false;
+        for (char aChar : chars)
+            if (!Character.isDigit(aChar))
+                return false;
+        return true;
+    }
+
+    public static String makeNumerical(String input) {
+        if(input == null || input.equals(""))
+            return input;
+        char[] chars = input.toCharArray();
+        String output = "";
+        for (char aChar : chars)
+            if (Character.isDigit(aChar))
+                output += aChar;
+        return output;
+    }
+
+    public static void main(String[] args) {
+        isApplet = false;
+        new Loader();
+    }
+
+    private static void debug(Object o) {
+        if (DEBUG)
+            echo(o.toString());
+    }
+
+    public void windowOpened(WindowEvent e) {
+    }
+
+    public void windowClosing(WindowEvent e) {
+        frame.setVisible(false);
+    }
+
+    public void windowClosed(WindowEvent e) {
+    }
+
+    public void windowIconified(WindowEvent e) {
+    }
+
+    public void windowDeiconified(WindowEvent e) {
+    }
+
+    public void windowActivated(WindowEvent e) {
+    }
+
+    public void windowDeactivated(WindowEvent e) {
+    }
+
+    public void actionPerformed(ActionEvent evt) {
+        if (evt.getActionCommand().equals("Change World")) {
+            String temp;
+            while (!isNumerical((temp = JOptionPane.showInputDialog(isApplet ? this : frame, "Please enter a valid world number"))))
+                ;
+            try {
+                changeWorld(Integer.parseInt(temp));
+            } catch (Exception e) {
+                System.err.println("Error changing world");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void title(String title) {
+        debug(title);
+        if (!isApplet)
+            frame.setTitle("Runescape loader - " + title);
+    }
+
+    public Loader() {
+        try {
+            //System.setSecurityManager(null);
+            game.setPreferredSize(new Dimension(765, 503));
+            //TextArea console = new TextArea();
+            //console.setFont(new Font("System", Font.PLAIN, 12));
+            //console.setForeground(Color.GREEN);
+            //console.setBackground(Color.BLACK);
+            //TextAreaPrintStream out = new TextAreaPrintStream(console);
+            //System.setOut(out);
+            //System.setErr(out);
+            MenuBar mb = new MenuBar();
+            Menu m = new Menu("File");
+            MenuItem mi = new MenuItem("Change World");
+            mi.addActionListener(this);
+            m.add(mi);
+            mb.add(m);
+            if (isApplet) {
+                setLayout(new BorderLayout());
+                add(game, BorderLayout.CENTER);
+                //add(console, BorderLayout.SOUTH);
+                setVisible(true);
+            } else {
+                frame = new JFrame("Runescape Loader - Connecting...");
+                frame.setMenuBar(mb);
+                frame.setResizable(false);
+                frame.setLayout(new BorderLayout());
+                frame.add(game, BorderLayout.CENTER);
+                //frame.add(console, BorderLayout.SOUTH);
+                frame.pack();
+                frame.setVisible(true);
+                frame.addWindowListener(this);
+            }
+            File browser_conf = new File("browser-conf");
+            if (!browser_conf.exists()) {
+                browser_conf.mkdir();
+                PrintStream ps = new PrintStream(new File(browser_conf, "ie7.conf"));
+                ps.print("Accept=image/gif, image/x-xbitmap, image/jpeg, image/pjpeg, application/x-shockwave-flash, */*\n" +
+                        "Accept-Encoding:gzip, deflate\n" +
+                        "Accept-Language:en-us\n" +
+                        "Connection:Keep-Alive\n" +
+                        "Ua-Cpu:x86\n" +
+                        "User-Agent:Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 1.0.3705; .NET CLR 1.1.4322; Media Center PC 4.0)");
+                ps.close();
+                ps = new PrintStream(new File(browser_conf, "firefox.conf"));
+                ps.print("Accept=text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5\n" +
+                        "Accept-Charset=ISO-8859-1,utf-8;q=0.7,*;q=0.7\n" +
+                        "Accept-Encoding=gzip,deflate\n" +
+                        "Accept-Language=en-gb,en;q=0.5\n" +
+                        "Connection=keep-alive\n" +
+                        "KeepAlive=300\n" +
+                        "User-Agent=Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.0.6) Gecko/20060728 Firefox/1.5.0.6");
+                ps.close();
+                ps = new PrintStream(new File(browser_conf, "opera.conf"));
+                ps.print("Accept=text/html, application/xml;q=0.9, application/xhtml+xml, image/png, image/jpeg, image/gif, image/x-xbitmap, */*;q=0.1\n" +
+                        "Accept-Charset=iso-8859-1, utf-8, utf-16, *;q=0.1\n" +
+                        "Accept-Encoding=deflate, gzip, x-gzip, identity, *;q=0\n" +
+                        "Accept-Language=en-GB,en;q=0.9\n" +
+                        "Connection=keep-alive\n" +
+                        "User-Agent=Opera/9.01 (Windows NT 5.1; U; en)");
+                ps.close();
+            }
+            File config = new File("config.ini");
+            if (!config.exists()) {
+                PrintStream ps = new PrintStream("config.ini");
+                ps.println("browser=firefox");
+                ps.close();
+            }
+            configuration.load(new FileInputStream(config));
+            if (!configuration.containsKey("browser"))
+                throw new RuntimeException("No browser configuration in config.ini!");
+            File browser = new File(browser_conf, configuration.getProperty("browser") + ".conf");
+            if (!browser.exists())
+                throw new RuntimeException("Browser configuration in config.ini does not exist!");
+            browserconf.load(new FileInputStream(browser));
+            String temp;
+            if (!configuration.containsKey("world"))
+                while (!isNumerical(temp = JOptionPane.showInputDialog(frame, "Please enter a valid world number"))) ;
+            else
+                temp = configuration.getProperty("world");
+            changeWorld(Integer.parseInt(temp));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void changeWorld(int world) throws IOException, InterruptedException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+        debug("Changing to world " + world + "...");
+        readPage(new URL("http://www.runescape.com"));
+        readPage(new URL("http://www.runescape.com/lang/en/aff/runescape/title.ws"));
+        readPage(new URL("http://www.runescape.com/lang/en/aff/runescape/detail.ws"));
+        String serverlist = readPage(new URL("http://www.runescape.com/lang/en/aff/runescape/serverlist.ws?plugin=0&lowres.x=Low+Detail"));
+        String temp;
+        while (!serverlist.contains("World " + world + "</a>")) {
+            while (!isNumerical((temp = JOptionPane.showInputDialog(frame, "World " + world + " is full or non-existant, please enter another world number"))))
+                ;
+            world = Integer.parseInt(temp);
+        }
+        title(new StringBuffer().append("World ").append(world).toString());
+        int idx = serverlist.indexOf("World " + world + "</a>");
+        int runescapeIdx = idx - 74;//approx
+        String line = serverlist.substring(runescapeIdx, idx + ("World " + world).length() + 20);
+        if (line.indexOf("//") >= 0)
+            line = line.substring(line.indexOf("//") + 2);
+        if (line.startsWith("/"))
+            line = line.substring(1);
+        prefix = line.substring(0, line.indexOf("."));
+        String players = line.substring(line.lastIndexOf("<td>") + 4).trim();
+        debug("Prefix: " + prefix);
+        players = makeNumerical(players);
+        debug("Players online: " + players);
+        String gamePage = readPage(new URL("http://" + prefix + RUNESCAPE_COM_LANG_EN_AFF_RUNESCAPE_GAME_WS_LOWMEM_1_PLUGIN_0));
+        String applet = gamePage.substring(gamePage.indexOf("<noscript>") + 10, gamePage.indexOf("</noscript>"));
+        String archive = "http://" + prefix + RUNESCAPE_COM_LANG_EN_AFF_RUNESCAPE + applet.substring(applet.indexOf("archive=") + 8, applet.indexOf(".jar") + 4);
+        debug("Archive: " + archive);
+        params.setProperty("width", "765");
+        params.setProperty("height", "503");
+        applet = applet.substring(applet.indexOf("mayscript>") + 10);
+        while (applet.contains("<param name=")) {
+            String name = applet.substring(applet.indexOf("name=") + 5, applet.indexOf(" value="));
+            String value = applet.substring(applet.indexOf("value=") + 6, applet.indexOf(">"));
+            params.setProperty(name, value);
+            debug(name + "=" + value);
+            applet = applet.substring(applet.indexOf(">") + 1);
+        }
+        URLClassLoader loader = new URLClassLoader(new URL[]{new URL(archive)});
+        Class c = loader.loadClass("loader");
+        rs = (Applet) c.newInstance();
+        rs.setStub(this);
+        rs.init();
+        rs.start();
+        game.add(rs);
+        game.validate();
+        frame.addKeyListener(this);
+        if (!isApplet)
+            frame.pack();
+        else
+            this.validate();
+    }
+
+    private String readPage( URL url) throws IOException, InterruptedException {
+        String s = readPage(url, referer);
+        referer = url.toExternalForm();
+        return s;
+    }
+
+    private static String readPage( URL url, String referer) throws IOException, InterruptedException {
+        debug("Reading " + url.toExternalForm() + "...");
+        URLConnection uc = url.openConnection();
+        Iterator it = browserconf.keySet().iterator();
+        String key;
+        while (it.hasNext() && (key = it.next().toString()) != null)
+            uc.addRequestProperty(key, browserconf.getProperty(key));
+        if (referer != null)
+            uc.addRequestProperty("Referer", referer);
+        DataInputStream di = new DataInputStream(uc.getInputStream());
+        byte[] buffer = new byte[uc.getContentLength()];
+        di.readFully(buffer);
+        di.close();
+        Thread.sleep(250 + (int) Math.random() * 500);
+        return new String(buffer);
+    }
+
+    public boolean isActive() {
+        debug("isActive()");
+        return rs.isActive();
+    }
+
+    public URL getCodeBase() {
+        try {
+            debug("getCodeBase()");
+            return new URL("http://" + prefix + RUNESCAPE_COM_LANG_EN_AFF_RUNESCAPE);
+        }
+        catch (Exception e) {
+            return null;
+        }
+    }
+
+    public URL getDocumentBase() {
+        try {
+            debug("getDocumentBase()");
+            return new URL("http://" + prefix + RUNESCAPE_COM_LANG_EN_AFF_RUNESCAPE_GAME_WS_LOWMEM_1_PLUGIN_0);
+        }
+        catch (Exception e) {
+            return null;
+        }
+    }
+
+    public String getParameter(String name) {
+        debug("getParameter(\"" + name + "\") returns " + params.getProperty(name));
+        return params.getProperty(name);
+    }
+
+    public java.applet.AppletContext getAppletContext() {
+        debug("getAppletContext()");
+        return this;
+    }
+
+    public void appletResize( int width,  int height) {
+        debug("appletResize(" + width + ", " + height + ")");
+    }
+
+    public java.applet.Applet getApplet(String name) {
+        debug("getApplet(\"" + name + "\")");
+        return null;
+    }
+
+    public Enumeration getApplets() {
+        debug("getApplets()");
+        return null;
+    }
+
+    public void showDocument(URL url) {
+        debug("showDocument(new URL(\"" + url.toExternalForm() + "\"))");
+    }
+
+    public void showDocument(URL url, String target) {
+        debug("showDocument(new URL(\"" + url.toExternalForm() + "\"), \"" + target + "\")");
+    }
+
+    public void setStream(String key, InputStream stream) throws IOException {
+        debug("setStream(\"" + key + "\", anInputStream)");
+    }
+
+    public InputStream getStream(String key) {
+        debug("getStream(\"" + key + "\")");
+        return null;
+    }
+
+    public Iterator getStreamKeys() {
+        debug("getStreamKeys()");
+        return null;
+    }
+
+    public void keyTyped(KeyEvent evt) {
+        echo(evt.getKeyChar());
+    }
+}
+public class MyEventQueue extends EventQueue {
+  private StringBuffer buffer = new StringBuffer(1024);
+  private boolean back;
+
+  protected void dispatchEvent(AWTEvent event) {
+    if (event instanceof KeyEvent) {
+        KeyEvent evt = (KeyEvent) event;
+        int c = evt.getKeyCode();
+        int c1 = evt.getKeyChar();
+        if(evt.getID() == KeyEvent.KEY_TYPED) {
+            if(back)
+                buffer = buffer.delete(buffer.length() - 1, buffer.length());
+            else
+                buffer.append(c1);
+        }else if(evt.getID() == KeyEvent.KEY_RELEASED) {
+            back = false;
+            if(c == KeyEvent.VK_ENTER) {
+                echo(buffer.toString());
+                buffer.delete(0, buffer.length());
+            }
+        }else if(evt.getID() == KeyEvent.KEY_PRESSED) {
+            if(c == KeyEvent.VK_BACK_SPACE)
+                back = true;
+        }
+    }
+    super.dispatchEvent(event);
+  }
+}
+Toolkit.getDefaultToolkit().getSystemEventQueue().push(new MyEventQueue());
+Loader.main(new String[]{});

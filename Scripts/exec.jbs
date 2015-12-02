@@ -1,0 +1,19 @@
+public class InputThread implements Runnable{
+    private InputStream in;
+    
+    public InputThread(InputStream is) {
+        this.in = is;
+    }
+    
+    public void run() {
+        BufferedReader br = new BufferedReader(new InputStreamReader(in));
+        String line = null;
+        while((line = br.readLine()) != null)
+            echo(line);
+    }
+}
+
+Process p = Runtime.getRuntime().exec("$0");
+new Thread(new InputThread(p.getInputStream())).start();
+new Thread(new InputThread(p.getErrorStream())).start();
+echo("Exit status: " + p.waitFor());

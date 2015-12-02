@@ -1,0 +1,66 @@
+if("$1".equalsIgnoreCase("help")) {
+    echo("USAGE: !vote [pole] [option1|option2...] [question]");
+    return;
+}
+
+boolean running = true;
+String[] validVotes = "$2".replace('_', ' ').split("\\|");
+int[] voteCount = new int[validVotes.length];
+ArrayList voters = new ArrayList();
+
+int isValid(String vote) {
+    for(int i = 0; i < validVotes.length; i++)
+        if(validVotes[i].equalsIgnoreCase(vote) || validVotes[i].equals("other"))
+            return i;
+    return -1;
+}
+
+HashMap votes = new HashMap();
+
+public void onMessage(String channel, String sender, String login, String hostname, String message) {
+    if(!running)
+        return;
+    boolean sudo = jIRC.isSudo(hostname);
+    if(message.startsWith("`") && message.split("\\s+")[1].equalsIgnoreCase("$1")) {
+        String[] args = message.split("\\s+");
+        String c = args[0].substring(1);
+        if(c.equalsIgnoreCase("vote"))
+            if(voters.contains(hostname))
+                echo("You have already voted on this poll.");
+            else if(isValid(args[2]) != -1){
+                echo("Your vote has been counted, thank you.");
+                voters.add(hostname);
+                ++voteCount[isValid(args[2])];
+            }else {
+                StringBuilder sb = new StringBuilder("Invalid vote, votes are: ");
+                for(int i = 0; i < validVotes.length; i++)
+                    sb.append(validVotes[i]).append(i + 1 == validVotes.length? "": ", ");
+                echo(sb.toString());
+            }
+        else if(c.equalsIgnoreCase("end") && sudo) {
+            echo("Ending pole...");
+            _inst.removeListener(this);
+            running = false;
+            echo("Final results:");
+            int length = 0;
+            for(int i = 0; i < voteCount.length; i++)
+                length += voteCount[i];
+            int longest = -1;
+            for(int i = 0; i < validVotes.length; i++)
+                echo(validVotes[i] + ": " + voteCount[i] + ", " + (((double) voteCount[i] / (double) length) * 100) + "%");
+        } else if(c.equalsIgnoreCase("status")) {
+            int length = 0;
+            for(int i = 0; i < voteCount.length; i++)
+                length += voteCount[i];
+            int longest = -1;
+            for(int i = 0; i < validVotes.length; i++)
+                echo(validVotes[i] + ": " + voteCount[i] + ", " + (((double) voteCount[i] / (double) length) * 100) + "%");
+        }
+    }
+}
+
+_inst.addListener(this);
+StringBuffer sb = new StringBuffer("Vote '$1' started with question '$02', valid votes: ");
+for(int i = 0; i < validVotes.length; i++)
+    sb.append(validVotes[i]).append(i + 1 == validVotes.length? "": ", ");
+echo(sb.toString());

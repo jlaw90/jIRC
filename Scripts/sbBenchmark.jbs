@@ -1,0 +1,37 @@
+int length = 50;
+
+if(!"$1".equals("$$1"))
+    length = $1;
+
+echo("Running benchmarks (loops: " + length + "), please wait...");
+
+long[] builderTime = new long[length];
+for(int i = 0; i < length; i++) {
+    long start = System.currentTimeMillis();
+    StringBuilder sb = new StringBuilder();
+    for(Object o: IRCUserManager.getUsers("$channel"))
+        sb.append(o);
+    builderTime[i] = System.currentTimeMillis() - start;
+}
+long t = 0;
+for(int i = 0; i < length; i++)
+    t += builderTime[i];
+t /= length;
+echo("StringBuilder tests finished, average time (ns): " + t);
+
+long[] bufferTime = new long[length];
+for(int i = 0; i < length; i++) {
+    long start = System.currentTimeMillis();
+    StringBuffer sb = new StringBuffer();
+    for(Object o: IRCUserManager.getUsers("$channel"))
+        sb.append(o);
+    bufferTime[i] = System.currentTimeMillis() - start;
+}
+long bt = 0;
+for(int i = 0; i < length; i++)
+    bt += bufferTime[i];
+bt /= length;
+echo("StringBuffer tests finished, average time (ns): " + bt);
+String name = bt < t? "StringBuffer": "StringBuilder";
+long diff = bt < t? t - bt: bt - t;
+echo(name " wins by " + diff);

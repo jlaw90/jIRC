@@ -1,0 +1,33 @@
+URL google = new URL("http://www.google.com/search?q=" + URLEncoder.encode("$0"));
+URLConnection uc = google.openConnection();
+uc.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.8.0.8) Gecko/20061025 Firefox/1.5.0.8");
+BufferedReader br = new BufferedReader(new InputStreamReader(uc.getInputStream()));
+StringBuilder sb = new StringBuilder();
+String t;
+while((t = br.readLine()) != null)
+    sb.append(t);
+
+String content = sb.toString();
+
+String startMark = "<h2 class=r>";
+String urlStart = "<a class=l href=\"";
+String descriptionStart = "\">";
+String descriptionEnd = "</a>";
+String end = "</h2>";
+
+java.util.regex.Pattern p = java.util.regex.Pattern.compile(startMark + urlStart + "[\\w\\d%#&?_+:.,/#~]*" + descriptionStart + ".{0,128}" + descriptionEnd + end);
+java.util.regex.Matcher m = p.matcher(content);
+int finds = 0;
+echo("12G4o5o12g9l4e results: ");
+while(m.find()) {
+    finds++;
+    if(finds <= 3) {
+        String found = content.substring(m.start(), m.end());
+        String URL = found.substring(found.indexOf(urlStart) + urlStart.length(), found.indexOf(descriptionStart));
+        String description = found.substring(found.indexOf(descriptionStart) + descriptionStart.length(), found.indexOf(descriptionEnd));
+        description = description.replaceAll("</?b>", "").replaceAll("<\\?(u||i)>", "").replace("&amp;", "&").replace("&quot", "\"");
+        echo("" + URL + " - " + description);
+    }
+}
+if((finds - 3) > 0)
+    echo((finds - 3) + " more result" + (finds != 1? "s": "") + "!, http://www.google.com/search?q=" + URLEncoder.encode("$0"));

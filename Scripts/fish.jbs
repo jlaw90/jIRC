@@ -1,0 +1,453 @@
+class Player
+{
+    public String name = "";
+    public int level = 1;
+    public int coins = 50;
+    public int xp = 0;
+    public int rod = 0;
+    public ArrayList fish = new ArrayList();
+    public long lastFish = 0;
+    public boolean spoken = false;
+    public boolean rodBroken = false;
+
+    public Player(String name)
+    {
+        this.name = name;
+    }
+
+    public Player(String name, int level, int coins, int xp, int rod)
+    {
+        this.name = name;
+        this.level = level;
+        this.coins = coins;
+        this.xp = xp;
+        this.rod = rod;
+        lastFish = 0;
+    }
+
+    public void addXp(int xpGain)
+    {
+        this.xp += xpGain;
+        if(this.xp >= level * (50 + (100 * level))){
+            if(this.level < 99){
+                this.level++;
+                _inst.sendNotice(this.name, "You just gained a level!");
+                _inst.sendNotice(this.name, "You are now level " + this.level + ", You can now hold " + (this.level + 4) + " fish in your inventory");
+                _inst.sendNotice("$channel", "04" + this.name + " 7has gained a level, they are now level 05" + this.level);
+                //int k = this.level % 10;//remainder from divided by 10
+                //if(k == 0)
+                //    _inst.sendNotice(this.name, "You can now buy " + rods[this.level / 10] + " from the store");
+            }
+            if(this.level % 20 == 0)//this divided by 0 has no remainder
+                _inst.sendNotice(this.name, "You can now buy " + rods[this.level / 20] + " from ths store");
+        }
+    }
+
+    public boolean speakable()
+    {
+        return !spoken && (lastFish + 2000) < System.currentTimeMillis();
+    }
+
+    public void addFish(String fish)
+    {
+        lastFish = System.currentTimeMillis();
+        this.spoken = false;
+        if(this.fish.size() < 4 + this.level){
+            this.fish.add(fish);
+            //Jirc._instance.sendNotice(this.name, "It was added to your inventory");
+            PlayerManager.save();
+            if(this.fish.size() >= 4 + this.level)
+                _inst.sendNotice(this.name, "You have no more inventory space left, please type `shop to sell some fish!");
+        }else
+            _inst.sendNotice(this.name, "You have no more inventory space left, please type `shop to sell some fish!");
+    }
+}
+
+public class Trade extends Thread
+{
+    public Player p1;
+    public Player p2;
+    public boolean agreed;
+    public boolean p1accepted;
+    public boolean p2accepted;
+
+    public Trade(Player p, Player otherP){
+        this.p1 = p;
+        this.p2 = otherP;
+        _inst.sendNotice(otherP.name, p.name + " has sent you a trade request, type `trade accept to accept");
+    }
+
+    public void agreed(boolean t)
+    {
+        this.agreed = t;
+    }
+
+    public void run()
+    {
+
+    }
+}
+
+public class Fish extends Thread
+{
+    private Player p;
+
+    public Fish(String pname)
+    {
+        this.p = PlayerManager.getPlayer(pname);
+    }
+
+    public void run()
+    {
+        try{
+            _inst.sendNotice(p.name, "You bait your hook and throw it into the water...");
+            Thread.sleep((10 - p.rod) * new Random().nextInt(1000));
+            int tehR = new Random().nextInt(100 + (3 * p.level));
+            if(tehR <= 40){
+                _inst.sendNotice(p.name, "You did not catch a fish, try again");
+            }
+            else{
+                if(tehR >= 95 + (3 * p.level)){
+                    int coins = new Random().nextInt((100 * p.level) - p.level);
+                    _inst.sendNotice(p.name, "You just found a chest containing " + coins + " coins!, you pocket it for safekeeping");
+                    p.coins += coins;
+                }else
+                {
+                    int k = (int) Math.ceil(p.level / 10);
+                    if(k <= 0)
+                        k = 1;
+                    int array = new Random().nextInt(k);
+                    if(p.level <= 1)
+                        array = 0;
+                    String[] myArray = null;
+                    switch(array){
+                        case 0:
+                            myArray = fishName1;
+                            break;
+                        case 1:
+                            myArray = fishName2;
+                            break;
+                        case 2:
+                            myArray = fishName3;
+                            break;
+                        case 3:
+                            myArray = fishName4;
+                            break;
+                        case 4:
+                            myArray = fishName5;
+                            break;
+                        case 5:
+                            myArray = fishName6;
+                            break;
+                        case 6:
+                            myArray = fishName7;
+                            break;
+                        case 7:
+                            myArray = fishName8;
+                            break;
+                        case 8:
+                            myArray = fishName9;
+                            break;
+                        default:
+                            myArray = fishName1;
+                            break;
+                    }
+                    int fishR = new Random().nextInt(myArray.length);
+                    String fish = myArray[fishR];
+                    _inst.sendNotice(p.name, "You caught a " + fish + ", you gained " + 45 * ((array + 1) * 3) + "xp!");
+                    p.addXp(45 * ((array + 1) * 3));
+                    p.addFish(fish);
+                    boolean broken = new Random().nextInt(((p.rod + 1) *  3) + 50) > 50;
+                    if(broken){
+                        p.rodBroken = true;
+                        Jirc._instance.sendNotice(p.name, "You hit something on the way back up and your rod breaks, please type `repair to fix it or goto the shop and repair it");
+                    }
+                }
+            }
+        }catch(Exception e){Jirc._instance.sendNotice("$channel", "Exception caught: " + e);}
+        p.spoken = false;
+        p.lastFish = System.currentTimeMillis();
+    }
+}
+
+class Repair extends Thread
+{
+    Player p;
+
+    public Repair(Player p){
+        this.p = p;
+        this.p.spoken = true;
+    }
+
+    public void run()
+    {
+        Thread.sleep(new Random().nextInt(((p.rod + 1) * 3) * 10000));
+        if(new Random().nextInt(2) == 1){
+            _inst.sendNotice(p.name, "Your rod has been repaired!");
+            p.rodBroken = false;
+        }else
+            _inst.sendNotice(p.name, "You failed to repair your rod");
+        p.spoken = false;
+    }
+}
+
+class PlayerManager
+{
+    public static Map users = new HashMap();
+
+    public static Player getPlayer(String name)
+    {
+        if(users.containsKey(name)){
+            return users.get(name);
+        }else{
+            Player p = new Player(name);
+            users.put(name, p);
+            Object[] players = users.values().toArray();
+            PrintStream ps = new PrintStream("dat/fish.sav");
+            for(int i = 0; i < players.length; i++){
+                Player p1 = (Player) players[i];
+                synchronized(p1.fish){
+                    String it = "";
+                    for(int i1 = 0; i1 < p1.fish.size(); i1++)
+                        if(p1.fish.get(i1) != null)
+                            it += p1.fish.get(i1) + ",";
+                    ps.println(p1.name + "^" + p1.level + "^" + p1.coins + "^" + p1.xp + "^" + p1.rod + "^" + it);
+                }
+            }
+            ps.close();
+            ps.println(p.name + "^" + p.level + "^" + p.coins + "^" + p.xp + "^" + p.rod + "^");
+            ps.close();
+            return p;
+        }
+    }
+
+    public static boolean contains(String name)
+    {
+        return users.containsKey(name);
+    }
+
+    public static void save()
+    {
+        try{
+            PrintStream ps = new PrintStream("dat/fish.sav");
+            Object[] players = users.values().toArray();
+            for(int i = 0; i < players.length; i++){
+                Player p1 = (Player) players[i];
+                synchronized(p1.fish){
+                    String it = "";
+                    for(int i1 = 0; i1 < p1.fish.size(); i1++)
+                        if(p1.fish.get(i1) != null)
+                            it += p1.fish.get(i1) + ",";
+                    ps.println(p1.name + "^" + p1.level + "^" + p1.coins + "^" + p1.xp + "^" + p1.rod + "^" + it);
+                }
+            }
+            ps.close();
+        }catch(Exception e){e.printStackTrace();}
+    }
+}
+
+if(new File("dat/fish.sav").exists()){
+    BufferedReader br = new BufferedReader(new FileReader("dat/fish.sav"));
+    String s = null;
+    while((s = br.readLine()) != null){
+        String[] data = s.split("\\^");
+        String name = data[0];
+        int level = Integer.parseInt(data[1]);
+        int coins = Integer.parseInt(data[2]);
+        int xp = Integer.parseInt(data[3]);
+        int rod = Integer.parseInt(data[4]);
+        Player p = new Player(name, level, coins, xp, rod);
+        if(data.length >= 6){
+            String[] items = data[5].split(",");
+            for(i = 0; i < items.length; i++)
+                p.fish.add(items[i]);
+            _inst.sendNotice(name, "Data loaded :)");
+        }
+        PlayerManager.users.put(name, p);
+    }
+    br.close();
+}
+
+public String[] fishName1 = {"Shrimp", "Anchovie", "Mackerel"};
+public String[] fishName2 = {"Sardine", "Herring"};
+public String[] fishName3 = {"Pike", "Cod", "Seaweed"};
+public String[] fishName4 = {"Trout", "Salmon"};
+public String[] fishName5 = {"Tuna", "Lobster"};
+public String[] fishName6 = {"Lava Eel", "Monkfish"};
+public String[] fishName7 = {"Bass", "Swordfish"};
+public String[] fishName8 = {"Shark", "Whale"};
+public String[] fishName9 = {"Manta ray", "Sea turtle"};
+public String[] rods = {"Wooden Fishing Rod", "Bronze Fishing Rod", "Iron Fishing Rod", "Steel Fishing Rod", "Fishy Fishing Rod"};
+
+_inst.addListener(this);
+public void onMessage(String channel, String sender, String login, String hostname, String message){
+    if(message.startsWith("`")){
+        Player p = null;
+        if(PlayerManager.contains(sender))
+        p = PlayerManager.getPlayer(sender);
+        String m = message.substring(1);
+        String[] args = m.split(" ");
+        if(p == null || p.speakable()){
+            if(m.startsWith("fish")){
+                if(p == null)
+                    _inst.sendNotice(sender, "You have never played before, please type `play to create your user");
+                else {
+                    if(p.rodBroken)
+                        _inst.sendNotice(p.name, "Your rod has broken, please type `repair to fix it or goto the shop and pay to have it repaired instantly");
+                    else if(p.fish.size() >= 4 + p.level)
+                        _inst.sendNotice(p.name, "Your inventory is full!");
+                    else
+                        new Fish(sender).start();
+                }
+            }else if(m.startsWith("shop")){
+                if(args.length > 1){
+                    if(args[1].equalsIgnoreCase("sell") && args.length <= 2){
+                        _inst.sendNotice(sender, "Please type `shop sell all to sell all the items in your inventory");
+                    }
+                    else if(args[1].equalsIgnoreCase("sell")){
+                        if(args[2].equalsIgnoreCase("all")){
+                            String say = "";
+                            int c = 0;
+                            for(int i = p.fish.size() - 1; i > -1; i--){
+                                String s = p.fish.get(i);
+                                int array = 1;
+                                String[][] fishAll = new String[][]{fishName1, fishName2, fishName3, fishName4, fishName5, fishName6, fishName7, fishName8, fishName9};
+                                for(int i1 = 0; i1 < fishAll.length; i1++)
+                                    for(int i2 = 0; i2 < fishAll[i1].length; i2++)
+                                        if(fishAll[i1][i2].equals(s)){
+                                            array = i1;
+                                            break;
+                                        }
+                                p.fish.remove(i);
+                                int price = (array + 1) * 25;
+                                say += s + (i - 1 <= -1? "": (i - 2 <= -1? " & ": ","));
+                                c += price;
+                                p.coins += price;
+                            }
+                            _inst.sendNotice(sender, "Sold " + say + " for " + c + " coins!");
+                            p.fish.trimToSize();
+                        }else{
+                            int idx = -1;
+                            try{idx = Integer.parseInt(args[2]);}catch(Exception e){}
+                            if(idx < 0 || idx > 4)
+                                _inst.sendNotice(sender, "Please supply a valid number");
+                            else{
+                                int price = 0;
+                                for(int i = 0; i < fishName.length; i++)
+                                    if(fishName[i].equals(p.fish.get(idx)))
+                                        price = (i + 1) * 10;
+                                _inst.sendNotice(sender, "Sold " + p.fish.get(idx) + " for " + price + " coins!");
+                                p.fish.remove(idx);
+                                p.coins += price;
+                                p.fish.trimToSize();
+                            }
+                        }
+                    }else if(args[1].equalsIgnoreCase("buy") && args.length <= 2){
+                       _inst.sendNotice(sender, "Please type `shop buy ITEM-NO where ITEM-NO can be:");
+                        for(int i = 0; i < rods.length; i++)
+                            if(p.rod < i)
+                                _inst.sendNotice(sender, i + ". " + rods[i] + ", Price: " + ((i + 1) * (50 * (100 - i))));
+                    }else if(args[1].equalsIgnoreCase("buy")){
+                        int idx = -1;
+                        try{idx = Integer.parseInt(args[2]);}catch(Exception ex){_inst.sendNotice(sender, "Please enter a valid number");};
+                        if(idx < 0)
+                            _inst.sendNotice(sender, "Please enter a valid number");
+                        else{
+                            int price = (idx + 1) * (50 * (100 - idx));
+                            if(p.level >= (20 * idx) && p.rod < idx){
+                                if(p.coins >= price){
+                                    _inst.sendNotice(sender, "You bought " + rods[idx] + " for " + price + " coins!");
+                                    _inst.sendNotice(sender, "You immediately discard your " + rods[idx - 1] + "and equip your new one");
+                                    p.coins -= price;
+                                    p.rod = idx;
+                                }else
+                                    _inst.sendNotice(sender, "You don't have enough money to buy that item");
+                            }else if(p.level >= (20 * idx))
+                                _inst.sendNotice(sender, "You're rod is better than this hunk of crap.");
+                            else
+                                _inst.sendNotice(sender, "You're not a high enough level to buy this rod.");
+                        }
+                    }else if(args[1].equalsIgnoreCase("repair")){
+                        if(args.length > 2 && p.rodBroken){
+                            if(args[2].equalsIgnoreCase("rod")){
+                                if(p.coins >= 200 * (p.rod + 1)){
+                                    p.coins -= 200 * (p.rod + 1);
+                                    _inst.sendNotice(sender, "Rod repaired");
+                                    p.rodBroken = false;
+                                }else
+                                    _inst.sendNotice(sender, "Rod repaired");
+                            }
+                        }else if(p.rodBroken)
+                            _inst.sendNotcie(sender, "Repairing your rod will cost " + 200 * (p.rod + 1) + "coins, please type `shop repair rod to repair");
+                        else
+                            _inst.sendNotice(sender, "Your rod is not broken");
+                    }
+                }else{
+                    _inst.sendNotice(sender, "Hello, what may I do for you? (type `shop OPTION to choose)");
+                    _inst.sendNotice(sender, "Sell 4- Sell fish");
+                    _inst.sendNotice(sender, "Buy 4- Buy better equipment");
+                    _inst.sendNotice(sender, "Repair 4- Repair a broken rod");
+                }
+            }else if(m.startsWith("inventory")){
+                String inv = "";
+                for(int i = 0; i < p.fish.size(); i++)
+                    inv += p.fish.get(i) + (i + 1 >= p.fish.size()? "": (i + 2 >= p.fish.size()? " & ": ", "));
+                _inst.sendNotice(sender, "Inventory: " + inv + ".");
+                _inst.sendNotice(sender, "You can hold " + (p.level + 4) + " Items (" +  ((p.level + 4) - p.fish.size()) + " left)");
+            }else if(m.startsWith("repair")){
+                if(p.rodBroken){
+                    _inst.sendNotice(sender, "You begin repairing your rod... this may take a while");
+                    new Repair(p).start();
+                }else
+                    _inst.sendNotice(sender, "Your rod is not broken!");
+            }else if(m.startsWith("trade") && args.length > 1){
+                if(PlayerManager.contains(args[1]))
+                    new Trade(p, PlayerManager.getPlayer(args[1])).start();
+            }else if(m.startsWith("stats")){
+                String name = sender;
+                if(args.length > 1)
+                    name = args[1];
+                if(PlayerManager.contains(name)){
+                    Player p1 = PlayerManager.getPlayer(name);
+                    _inst.sendNotice(sender, "Stats for " + name + ":");
+                    _inst.sendNotice(sender, "Level: " + p1.level);
+                    _inst.sendNotice(sender, "Coins: " + p1.coins);
+                    _inst.sendNotice(sender, "xp: " + p1.xp + ", " + ((p1.level * (50 + (100 * p1.level))) - p1.xp) + "xp required until level " + (p1.level + 1));
+                    _inst.sendNotice(sender, "Fishing Rod: " + rods[p1.rod]);
+                    String inv = "";
+                    for(int i = 0; i < p1.fish.size(); i++)
+                        inv += p1.fish.get(i) + (i + 1 >= p1.fish.size()? "": (i + 2 >= p1.fish.size()?" & ": ","));
+                    _inst.sendNotice(sender, "Inventory:  " + inv);
+                }else
+                    _inst.sendNotice(sender, "No player ever created with that name");
+            }else if(m.startsWith("display")){
+                String name = sender;
+                if(args.length > 1)
+                    name = args[1];
+                if(PlayerManager.contains(name)){
+                    Player p1 = PlayerManager.getPlayer(name);
+                    _inst.sendMessage(channel, "Stats for " + name + ":");
+                    _inst.sendMessage(channel, "Level: " + p1.level);
+                    _inst.sendMessage(channel, "Coins: " + p1.coins);
+                    _inst.sendMessage(channel, "xp: " + p1.xp + ", " + ((p1.level * (50 + (100 * p1.level))) - p1.xp) + "xp required until level " + (p1.level + 1));
+                    _inst.sendMessage(channel, "Fishing Rod: " + rods[p1.rod]);
+                    String inv = "";
+                    for(int i = 0; i < p1.fish.size(); i++)
+                        inv += p1.fish.get(i) + (i + 1 >= p1.fish.size()? "": (i + 2 >= p1.fish.size()?" & ": ","));
+                    _inst.sendMessage(channel, "Inventory:  " + inv);
+                }else
+                    _inst.sendMessage(channel, "No player ever created with that name");
+            }
+            else if(m.startsWith("play")){
+                p = PlayerManager.getPlayer(sender);
+                _inst.sendNotice(sender, "Welcome to NewbFisher v1 " + sender + ", type `help for help");
+            }else if(m.startsWith("help")){
+                _inst.sendNotice(sender, "Type `fish to fish for a fish, this can take a while, when you have some fish, you  can type `shop to goto the store and sell it for coins, which you can use to buy better fishing equipment etc.");
+                _inst.sendNotice(sender, "Type `stats to view your stats, or `stats USER-NAME to view someone elses stats, type `inventory to view your inventory");
+            }
+             p.lastFish = System.currentTimeMillis();
+             PlayerManager.save();
+        }
+    }
+}
+_inst.sendMessage("$channel", "Fishing script loaded, please type `play to begin");

@@ -1,0 +1,52 @@
+    public void run() {
+        ArrayList data = new ArrayList();
+        boolean parsed = false;
+        while(true) {
+            try {
+                URL u = new URL("http://www.moparisthebest.com/smf/index.php");
+                URLConnection uc = u.openConnection();
+                uc.setRequestProperty("Cookie", "mpr_agree4=yes");
+                uc.setRequestProperty("user-agent", "Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.8.0.7) Gecko/20060921 Ubuntu/dapper-security Firefox/1.5.0.7");
+                BufferedReader br = new BufferedReader(new InputStreamReader(uc.getInputStream()));
+                String s;
+                int idx = -1;
+                while((s = br.readLine()) != null) {
+                    if(s.trim().startsWith("<b>Last post</b>")) {
+                        ++idx;
+                        int idx1 = s.trim().indexOf("\">") + 2;
+                        int idx2 = s.trim().indexOf("</a>");
+                        String nick = s.trim().substring(idx1, idx2);
+                        if(data.size() > idx && data.get(idx).equals(nick))
+                            continue;
+                        if(data.size() > idx)
+                            data.remove(idx);
+                        data.add(idx, nick);
+                        String topicLine = br.readLine();
+                        idx1 = topicLine.trim().indexOf(" title=");
+                        idx2 = topicLine.trim().lastIndexOf("\">");
+                        int idx3 = topicLine.trim().indexOf("<a href=\"") + 9;
+                        String link = topicLine.trim().substring(idx3, idx1 - 1);
+                        String name = topicLine.trim().substring(idx1 + 8, idx2);
+                        if(parsed) {
+				    URL u = new URL(link);
+				    URLConnection uc = u.openConnection();
+				    uc.setRequestProperty("Cookie", "mpr_agree4=yes");
+                		    uc.setRequestProperty("user-agent", "Mozilla/5.0 (X11; U; Linux i686; en-GB; rv:1.8.0.7) Gecko/20060921 Ubuntu/dapper-security Firefox/1.5.0.7");
+                		    BufferedReader br = new BufferedReader(new InputStreamReader(uc.getInputStream()));
+                		    String s;
+                            String line = "Couldn't locate post...";
+                            while((s = br.readLine()) != null)
+                                if(s.trim().startsWith("<div class=\"post\">"))
+                                    line = s.trim().substring(18).replaceAll("<[/-;:\\w\\s=\"]+>", "");
+                            echo("New Post \u0002(\u0002 " + name + "\u0002 )\u0002 by \u0002( \u0002" + nick + "\u0002 )\u0002 Link: " + link + "\u0002 )\u0002 post=" + line);
+                        }
+                    }
+                }
+                parsed = true;
+                Thread.sleep(1000);
+            }catch(Exception e) {
+                echo("Error parsing webpage: " + e.toString());
+            }
+        }
+    }
+new Thread(this).start();

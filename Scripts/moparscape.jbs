@@ -1,0 +1,2 @@
+_inst.ban("$channel", _inst.myManager.get("$1", "$channel").getHost());
+_inst.kick("$channel", "$1", "ALL private server questions are to go to http://www.moparscape.org/smf");

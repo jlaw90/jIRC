@@ -1,0 +1,102 @@
+jIRCInstance _inst = jIRC.instances.get("$server");
+IRCUserManager IRCUserManager = _inst.myManager;
+
+String $time = new java.text.SimpleDateFormat("hh:mm:ss").format(new Date());
+
+void echo(Object x) {
+    _inst.sendMessage("$channel", x.toString());
+}
+
+void echo(int x) {
+    echo(String.valueOf(x));
+}
+
+void echo(float x) {
+    echo(String.valueOf(x));
+}
+
+void echo(long x) {
+    echo(String.valueOf(x));
+}
+
+void echo(double x) {
+    echo(String.valueOf(x));
+}
+
+void echo(char x) {
+    echo(String.valueOf(x));
+}
+
+void echo(boolean x) {
+    echo(String.valueOf(x));
+}
+
+String reverse(String s) {
+    char[] c = s.toCharArray();
+    char[] c1 = new char[c.length];
+    for(int i = 0; i < c.length; i++)
+        c1[i] = c[c.length - i - 1];
+    return new String(c1);
+}
+
+String splice(String s) {
+    char[] c = s.toCharArray();
+    char[] c1 = new char[c.length];
+    for(int i = 0; i < c.length; i++)
+        c1[i] = c[i];
+    for(int i = 1; i < c.length; i+= 2) {
+        if(i >= c.length)
+            break;
+        c1[i] = c[c.length - i - 1];
+    }
+    return new String(c1);
+}
+
+int lifeTheUniverseAndEverything() {
+    return 42;
+}
+
+byte[] encode(String s) {
+    byte[] b = new byte[s.length() + 1];
+    b[0] = (byte) s.length();
+    for(int i = 1; i < s.length() + 1; i++)
+        b[i] = (byte) (s.charAt(i - 1) - (24 + i));
+    return b;
+}
+
+final char[] chars = {
+        '_', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
+        'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
+        't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2',
+        '3', '4', '5', '6', '7', '8', '9'
+};
+
+String decode(byte[] data) {
+    int length = (int) data[0];
+    String s = "";
+    for(int i = 1; i < data.length; i++)
+        s += (char) (data[i] + (24 + i));
+    return s;
+}
+
+String hex(int i) {
+    return Integer.toHexString(i);
+}
+
+String octal(int i) {
+    return Integer.toOctalString(i);
+}
+
+String md5(byte[] b) {
+    java.security.MessageDigest md5 = java.security.MessageDigest.getInstance("MD5");
+    md5.update(b);
+    byte[] b = md5.digest();
+    String hex = "";
+    for(byte b1:b) {
+        String h = Integer.toHexString(b1 & 0xff);
+        while(h.length() < 2)
+            h = "0" + h;
+        hex += h;
+    }
+    return hex;
+}

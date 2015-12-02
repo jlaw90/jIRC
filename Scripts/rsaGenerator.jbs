@@ -1,0 +1,20 @@
+int strength = 512;
+if(!"$1".equals("$$1"))
+    strength = $1;
+if(strength < 512) {
+    echo("Strength cannot be less than 512 bits!");
+    return;
+}
+echo("Generating RSA key pair with a strength of " + strength + "...");
+
+java.security.KeyPairGenerator rsa = java.security.KeyPairGenerator.getInstance("RSA");
+rsa.initialize(strength);
+java.security.KeyPair kp = rsa.genKeyPair();
+
+java.security.interfaces.RSAPublicKey pk = (java.security.interfaces.RSAPublicKey) kp.getPublic();
+java.security.interfaces.RSAPrivateCrtKey vk = (java.security.interfaces.RSAPrivateCrtKey) kp.getPrivate();
+
+System.out.println("Modulus: " + pk.getModulus());
+System.out.println("public exponent: " + pk.getPublicExponent());
+System.out.println("Private exponent: " + vk.getPrivateExponent());
+echo("Generated successfully!");

@@ -1,0 +1,15 @@
+/browser-conf
+/bsh
+/classes
+/dat/usercache
+/dat/fish.sav
+/META-INF
+/pircbot-1.4.4
+/release
+/bsh-2.0b4.jar
+/*.bat
+/*.sh
+/err.log
+/*.lst
+/jIRC.time
+/config.ini

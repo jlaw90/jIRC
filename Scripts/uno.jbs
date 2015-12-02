@@ -1,0 +1,767 @@
+//Had to recreate the Timer implementation
+
+interface Colors {
+    String BOLD = "";
+    String NORMAL = "";
+    String REVERSE = "";
+    String ITALIC = "\1d";
+    String UNDERLINE = "\1f";
+    String CTRLC = "";
+    String WHITE = CTRLC + "00";
+    String BLACK = CTRLC + "01";
+    String BLUE = CTRLC + "02";
+    String GREEN = CTRLC + "03";
+    String RED = CTRLC + "04";
+    String YELLOW = CTRLC + "08";
+    String BLACKBG = CTRLC + "00,01";
+}
+
+class Card implements Colors, Comparable {
+    //Suits
+    public static final int WildSuit = -1;
+    public static final int Red = 0;
+    public static final int Green = 1;
+    public static final int Blue = 2;
+    public static final int Yellow = 3;
+    public static final int[] Suits = new int[]{Red, Green, Blue, Yellow};
+
+    //Honor cards
+    public static final int Skip = 10;
+    public static final int DrawTwo = 11;
+    public static final int Reverse = 12;
+    public static final int[] Honors = new int[]{Skip, DrawTwo, Reverse};
+
+    //Wild cards
+    public static final int Wild = 13;
+    public static final int WildDrawFour = 14;
+    public static final int[] Wilds = new int[]{Wild, WildDrawFour};
+
+    public static final int[] Ranks = new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
+
+    int rank;
+    int suit;
+
+    public Card(int rank, int suit) {
+        this.rank = rank;
+        this.suit = suit;
+    }
+
+    public boolean wild() {
+        for (int wild : Wilds)
+            if (rank == wild)
+                return true;
+        return false;
+    }
+
+    public boolean honor() {
+        for(int honor: Honors)
+            if(honor == rank)
+                return true;
+        return false;
+    }
+
+    public int value() {
+        return wild() ? 50 : honor() ? 20 : rank;
+    }
+
+    public boolean matches(Card c) {
+        if (c.wild() || rank == c.rank || suit == c.suit)
+            return true;
+        return false;
+    }
+
+    public boolean equals(Card c) {
+        return suit == c.suit && rank == c.rank;
+    }
+
+    public String toString() {
+        String s = BLACKBG + BOLD + "[";
+        //set the colors for suited cards. unsuited wilds get their colors below.
+        switch (suit) {
+            case Red:
+                s += RED + "R";
+                break;
+            case Green:
+                s += GREEN + "G";
+                break;
+            case Blue:
+                s += BLUE + "B";
+                break;
+            case Yellow:
+                s += YELLOW + "Y";
+                break;
+        }
+
+        switch (rank) {
+            case Skip:
+                s += "S ";
+                break;
+            case DrawTwo:
+                s += "D2 ";
+                break;
+            case Reverse:
+                s += "R ";
+                break;
+            case Wild:
+                s += " " + RED + "W" + GREEN + "I" + YELLOW + "L" + BLUE + "D ";
+                break;
+            case WildDrawFour:
+                s += " " + RED + "W" + GREEN + "D" + YELLOW + "R" + BLUE + "4 ";
+                break;
+            default:
+                s += String.valueOf(rank) + " ";
+        }
+        s += NORMAL + BLACKBG + BOLD + "]" + NORMAL;
+        return s;
+    }
+
+    public static Card fromString(String c) {
+        String tmp = c.replace(" ", "").toLowerCase();
+        if (tmp.equals("wild"))
+            return new Card(Wild, WildSuit);
+        if (tmp.equals("wdr4"))
+            return new Card(WildDrawFour, WildSuit);
+        if (tmp.equals("wild4"))
+            return new Card(WildDrawFour, WildSuit);
+        int suit = -1;
+        char s = tmp.charAt(0);
+        if (s == 'r')
+            suit = Red;
+        if (s == 'g')
+            suit = Green;
+        if (s == 'b')
+            suit = Blue;
+        if (s == 'y')
+            suit = Yellow;
+        if (suit == -1)
+            return null;
+
+        String r = tmp.substring(1, tmp.length());
+        int rank = -1;
+        if (r.matches("\\d+"))
+            rank = Integer.parseInt(r);
+        if (r.equals("d2"))
+            rank = DrawTwo;
+        if (r.equals("dt"))
+            rank = DrawTwo;
+        if (r.equals("s"))
+            rank = Skip;
+        if (r.equals("r"))
+            rank = Reverse;
+        if (rank == -1)
+            return null;
+        return new Card(rank, suit);
+    }
+
+    public int compareTo(Object o) {
+        if(!(o instanceof Card))
+          return 1;
+        Card c = (Card) o;
+        if (c.wild())
+            return 1;
+        if (c.rank != rank)
+            return c.rank - rank;
+        else
+            return c.suit - suit;
+    }
+}
+
+class Pile {
+    Stack cards;
+
+    //Just create an empty array of cards
+    public Pile() {
+        cards = new Stack();
+    }
+
+    public Card[] toArray() {
+        return cards.toArray(new Card[cards.size()]);
+    }
+
+    //Returns the number of cards in the pile. wraps ArrayList.size
+    public int size() {
+        return cards.size();
+    }
+
+    //Clears a pile, wraps ArrayList.clear
+    public void clear() {
+        cards.clear();
+    }
+
+    //Adds a card, wraps ArrayList.add
+    public void add(Card c) {
+        cards.add(c);
+    }
+
+    //Returns the top card and shifts all elements to fill the space
+    public Card shift() {
+        return (Card) cards.pop();
+    }
+
+    //Adds a card to the top of the pile and shifts all elements
+    public void unshift(Card c) {
+        cards.push(c);
+    }
+
+    //Returns the index of a card on the array, wraps ArrayList.indexOf
+    public int index(Card c) {
+        return cards.indexOf(c);
+    }
+
+    //Checks the pile for a certain card
+    public boolean contains(Card c) {
+        return cards.contains(c);
+    }
+
+    //Deletes the card at the specified index
+    public Card deleteAt(int i) {
+        Card c = (Card) cards.get(i);
+        cards.remove(i);
+        return c;
+    }
+
+    //Shuffles the pile 3 times
+    public void shuffle() {
+        for (int i = 0; i < 3; i++)
+            Collections.shuffle(cards);
+    }
+
+    //Returns the top card
+    public Card peek() {
+        return (Card) cards.peek();
+    }
+
+    //Returns the current point value for the pile
+    public int value() {
+        int value = 0;
+        for (Object c : cards)
+            value += ((Card) c).value();
+        return value;
+    }
+
+    //Returns the pile as a String
+    public String toString() {
+        String s = "";
+        for (Object c : cards)
+            s += ((Card) c).toString();
+        return s;
+    }
+}
+
+//A full deck
+class Deck extends Pile {
+    /* A deck gets:
+    *   - For each suit, one Zero card, two of each rank from 1 through 9, and two
+    *     of each Honor card.
+    *   - Four of each of the two wild cards.
+    */
+
+    public Deck() {
+        for (int suit : Card.Suits) {
+            add(new Card(0, suit));
+            for (int i = 0; i < 2; i++) {
+                for (int rank = 0; rank < 10; rank++)
+                    add(new Card(rank, suit));
+                for (int rank : Card.Honors)
+                    add(new Card(rank, suit));
+            }
+        }
+        for (int wild : Card.Wilds) {
+            for (int i = 0; i < 4; i++)
+                add(new Card(wild, 0));
+        }
+    }
+}
+
+/* A player contains a reference to the IRC user, their current hand, and the
+ * number of accumulated points. Also, their number of warnings. This is so they
+ * can be ejected from the game if they're friggin annoying.
+ */
+
+class Player {
+    public String nick;
+    public Pile hand;
+    public int points, warnings;
+    public boolean hasdrawn;
+
+    public Player(String nick) {
+        this.nick = nick;
+        hand = new Pile();
+        points = 0;
+        warnings = 0;
+        hasdrawn = false;
+    }
+}
+
+/* Represents a game of Uno, from beginning to end.
+ *
+ * A game includes a reference to the connection and channel in which it's taking place,
+ * the list of players, the two piles (stock and discard), and the current game
+ * state.
+ */
+class Game implements Colors {
+    ArrayList players;
+    int limit;
+    Pile stock, discard;
+    String state, channel;
+    jIRCInstance server;
+    int direction;
+    int currentplayer;
+    public static final int Forward = 1;
+    public static final int Reverse = -1;
+
+    public void echo(String message) {
+        server.sendMessage(channel, message);
+    }
+
+    public Game(jIRCInstance inst, String channel, int limit) {
+        players = new ArrayList();
+        this.server = inst;
+        this.channel = channel;
+        this.limit = limit;
+        stock = new Pile();
+        discard = new Pile();
+        direction = Forward;
+        currentplayer = 0;
+        state = "newgame";
+    }
+
+    // Advertises a new game beginning, asks people to join within 30 seconds.
+    public void advertise() {
+        echo("A Game of Uno is starting in 30 seconds, type \"join\" to join!");
+        echo("First person to " + String.valueOf(limit) + " wins!");
+        state = "advertising";
+        new Timer(this, UnoGame.instance, 30000);
+    }
+
+    public void addPlayer(String user) {
+        players.add(new Player(user));
+    }
+
+    public Player getPlayer(String user) {
+        for (Object p : players)
+            if (((Player) p).nick.equalsIgnoreCase(user))
+                return (Player) p;
+        return null;
+    }
+
+    public Player whoseTurn() {
+        return (Player) players.get(currentplayer);
+    }
+
+    public Player nextPlayer(boolean advance) {
+        int np = currentplayer + direction;
+        if (np >= players.size())
+            np = 0;
+        else if (np < 0)
+            np = players.size() - 1;
+        if (advance) {
+            currentplayer = np;
+            return whoseTurn();
+        }
+        return (Player) players.get(np);
+    }
+
+    public boolean isTurn(Player p) {
+        return players.get(currentplayer).equals(p);
+    }
+
+    public void tellHand(Player p, String destination, boolean score) {
+        if (p == null)
+            return;
+        if (destination == null) {
+            String tmp = "Your hand is: " + p.hand.toString();
+            if (score)
+                tmp += " (" + String.valueOf(p.hand.value()) + " points)";
+            server.sendRawLine("NOTICE " + p.nick + " :" + tmp);
+        } else {
+            String tmp = BOLD + p.nick + NORMAL + "'s hand is: " + p.hand.toString();
+            if (score)
+                tmp += "(" + String.valueOf(p.hand.value()) + " points)";
+            server.sendMessage(destination, tmp);
+        }
+    }
+
+    public void tellHand(Player p, String destination) {
+        tellHand(p, destination, false);
+    }
+
+    public void tellHand(Player p) {
+        tellHand(p, null, false);
+    }
+
+    public void nextTurn(boolean advance) {
+        if (advance)
+            nextPlayer(true);
+        Player p = whoseTurn();
+
+        //Hack, make sure this doesn't stick around
+        for (Object p1 : players)
+            ((Player) p1).hasdrawn = false;
+
+        String s = BOLD + p.nick + NORMAL + " up, top card: " + discard.peek().toString();
+        s += "(" + nextPlayer(false).nick + " up next!)";
+        echo(s);
+        tellHand(p);
+        state = "awaitplay1";
+        new Timer(this, UnoGame.instance, 30000);
+    }
+
+    public void deal() {
+        if (players.size() < 2) {
+            state = "cancelled";
+            return;
+        }
+
+        Deck d = new Deck();
+        d.shuffle();
+
+        //Seven cards to each player
+        for (int i = 0; i < 7; i++)
+            for (Object p : players)
+                ((Player) p).hand.add(d.shift());
+
+        //Start the discard pile, loop until we have a suited colour
+        while (true) {
+            discard.add(d.shift());
+            if (!discard.peek().wild())
+                break;
+            d.add(discard.shift());
+            d.shuffle();
+        }
+        //Remainder is the stock pile
+        stock = d;
+
+        //Now send out notices to everyone about their hands, and start the game
+        for (Object p : players)
+            tellHand((Player) p);
+        nextTurn(false);
+    }
+
+    public void pass(String nick) {
+        Player p;
+        if (nick == null)
+            p = whoseTurn();
+        else {
+            p = getPlayer(nick);
+            if (!isTurn(p)) {
+                server.sendMessage(nick, "You can't pass for someone else, stfu.");
+                return;
+            }
+        }
+        if (!p.hasdrawn) {
+            echo("Forcing " + BOLD + nick + NORMAL + " to draw a card");
+            drawOne(p.nick);
+        }
+        nextTurn(true);
+    }
+
+    public void playCard(String user, String cardstr) {
+        Player player = getPlayer(user);
+        if (player == null) {
+            server.sendRawLine("NOTICE " + user + ": You aren't playing, stfu.");
+            return;
+        }
+        if (!isTurn(player)) {
+            server.sendRawLine("NOTICE " + user + ": It isn't your turn. I'm warning you!");
+            player.warnings++;
+            return;
+        }
+        Card card = Card.fromString(cardstr);
+        if (card == null) {
+            echo("I don't know what a " + cardstr + " is.");
+            return;
+        }
+        if (!player.hand.contains(card)) {
+            server.sendRawLine("NOTICE " + user + ": You don't have that card...");
+            return;
+        }
+        if (!discard.peek().matches(card)) {
+            server.sendRawLine("NOTICE " + user + ": You can't play that card");
+            return;
+        }
+
+        //Remove the card from the players hand and put it on the discard pile
+        int idx = player.hand.index(card);
+        discard.unshift(player.hand.deleteAt(idx));
+
+        //Does the player only have one card left?!
+        if (player.hand.size() == 1)
+            echo(BOLD + user + NORMAL + " has " + BOLD + "UNO!" + NORMAL);
+
+        //Apply effects of draw cards -- these have to be done before "letting"
+        //someone win
+        String tmp = null;
+        switch (card.rank) {
+            case Card.DrawTwo:
+                Player nplayer = nextPlayer(true);
+                tmp = nplayer.nick + " draws two";
+                drawX(nplayer.nick, 2);
+                break;
+            case Card.WildDrawFour:
+                nplayer = nextPlayer(true);
+                tmp = nplayer.nick + " draws four";
+                drawX(nplayer.nick, 4);
+        }
+        if (player.hand.size() == 0) {
+            if (tmp != null)
+                echo(tmp);
+
+            int score = 0;
+            echo(BOLD + player.nick + NORMAL + " won the hand!");
+            echo("Everyone else's hands were:");
+            for (Object p : players) {
+                if (p == player)
+                    continue;
+                tellHand((Player) p, "$channel", true);
+                score += ((Player) p).hand.value();
+            }
+            echo(player.nick + " wins " + String.valueOf(score) + " points!");
+            player.points += score;
+            tellScores();
+
+            //Clean up
+            state = "newgame";
+            for (Object p : players)
+                ((Player) p).hand.clear();
+            discard.clear();
+            stock.clear();
+
+            if (player.points >= limit) {
+                echo(BOLD + player.nick + NORMAL + " has won the whole game!");
+                echo("Thanks for playing UNO!");
+                players.clear();
+                state = "gameover";
+            } else {
+                echo("Next round is to begin in 30 seconds...");
+                state = "advertising";
+                new Timer(this, UnoGame.instance, 30000);
+            }
+            return;
+        }
+
+        echo(tmp + " and is skipped!");
+        //Apply the rest of the special effects
+        switch (card.rank) {
+            case Card.Reverse:
+                echo("Reversing order!");
+                reverseDirection();
+                break;
+            case Card.Skip:
+                echo(nextPlayer(true).nick + " is skipped!");
+        }
+
+        //If the card was Wild, tell the player who picked it to pick a colour
+        if (card.wild()) {
+            echo(player.nick + ": pick a colour (red, yellow, green or blue)");
+            state = "choosecolor";
+            new Timer(this, UnoGame.instance, 30000);
+        }
+        if (!card.wild())
+            nextTurn(true);
+    }
+
+    public Card drawCard() {
+        if (stock.size() == 0) {
+            echo("Stock pile is empty, gotta shuffle!");
+            Card tmp = discard.shift();
+            for (Card c : discard.toArray())
+                stock.add(c);
+            discard.clear();
+            discard.unshift(tmp);
+            stock.shuffle();
+        }
+        return stock.shift();
+    }
+
+    public void drawOne(String user) {
+        Player player = getPlayer(user);
+        if (player == null)
+            return;
+        Card drew = drawCard();
+        player.hand.add(drew);
+        server.sendRawLine("NOTICE " + user + ": You drew a " + drew.toString());
+    }
+
+    public void drawX(String user, int cards) {
+        Player player = getPlayer(user);
+        for (int i = 0; i < 4; i++) {
+            Card c = drawCard();
+            player.hand.add(c);
+            server.sendRawLine("NOTICE " + user + ": You drew a " + c.toString());
+        }
+    }
+
+    public void reverseDirection() {
+        direction = direction == Forward ? Reverse : Forward;
+    }
+
+    public void tellCounts() {
+        StringBuilder sb = new StringBuilder();
+        for (Object p : players)
+            sb.append(((Player) p).nick + ": " + ((Player) p).hand.size() + ", ");
+        echo("Card counts: " + sb.toString());
+    }
+
+    public void tellScores() {
+        StringBuilder sb = new StringBuilder();
+        for (Object p : players)
+            sb.append(((Player) p.nick) + ": " + ((Player) p.points) + ", ");
+        echo("Scores: " + sb.toString());
+    }
+}
+
+public class UnoGame implements jIRCListener, Colors{
+    jIRCInstance server;
+    String[] ADMINS = new String[]{"newbiehacker", "pd"};
+    public static UnoGame instance;
+    HashMap games = new HashMap();
+
+    public UnoGame(jIRCInstance server) {
+        this.server = server;
+        instance = this;
+        server.addListener(this);
+    }
+
+    public void timerEvent(Game src) {
+        if (src.state.equals("advertising")) {
+            src.state = "dealing";
+            src.deal();
+            if(src.state.equals("cancelled")) {
+                src.echo("Game cancelled");
+                UnoGame.instance.games.remove(src.channel);
+            }
+        }
+        if (src.state.equals("awaitplay2")) {
+            src.state = "forcepass";
+            src.pass(null);
+        }
+        if (src.state.equals("awaitplay1")) {
+            src.echo(BOLD + src.whoseTurn().nick + NORMAL + ": 30 second warning!");
+            src.state = "awaitplay2";
+            new Timer(src, this, 30000);
+        }
+        if (src.state.equals("choosecolor")) {
+            int color = new Random().nextInt(5);
+            String[] colors = new String[]{"red", "green", "blue", "yellow"};
+            src.echo("Chose random color: " + colors[color]);
+            src.discard.peek().suit = color;
+            src.nextTurn(true);
+        }
+    }
+
+    public void onMessage(String channel, String sender, String login, String hostname, String message) {
+        Game g = (Game) games.get(channel);
+
+        if (g != null && g.state.equals("gameover")) {
+            games.remove(channel);
+            g = null;
+        }
+
+        if ((g == null || g.state.equals("cancelled")) && message.equalsIgnoreCase("!uno")) {
+            if (message.split(" ").length < 2)
+                g = new Game(server, channel, 5000);
+            else
+                g = new Game(server, channel, Integer.parseInt(message.split(" ")[1]));
+            games.put(channel, g);
+            g.advertise();
+            return;
+        }
+
+        if (g == null)
+            return;
+        if (message.equalsIgnoreCase("join")) {
+            if (!g.state.equals("advertising")) {
+                echo("We are not accepting new players at the moment, gamestate is \"" + g.state + "\"");
+                return;
+            }
+            g.addPlayer(sender);
+            g.echo(sender + " will play!");
+            return;
+        }
+        if (message.startsWith("play ")) {
+            String cardstr = message.substring(5, message.length());
+            g.playCard(sender, cardstr);
+            return;
+        }
+        if (message.equalsIgnoreCase("draw")) {
+            Player p = g.getPlayer(sender);
+            if (p == null)
+                return;
+            if (p.hasdrawn) {
+                g.echo("You can only draw once, " + BOLD + sender + NORMAL + "!");
+                return;
+            }
+            g.drawOne(sender);
+            p.hasdrawn = true;
+            return;
+        }
+        if (message.equalsIgnoreCase("pass")) {
+            g.pass(sender);
+            return;
+        }
+        if (message.equalsIgnoreCase("cards")) {
+            g.tellHand(g.getPlayer(sender));
+            return;
+        }
+        if (message.equalsIgnoreCase("count")) {
+            g.tellCounts();
+            return;
+        }
+        if (message.equalsIgnoreCase("score")) {
+            g.tellScores();
+            return;
+        }
+        if (message.equalsIgnoreCase("!unoend")) {
+            for (String s : ADMINS)
+                if (s.equalsIgnoreCase(sender)) {
+                    g.echo("Ending the game! Hands were:");
+                    for (Object p : g.players) {
+                        g.tellHand((Player) p, channel);
+                        games.remove(channel);
+                    }
+                }
+            return;
+        }
+        if (message.equalsIgnoreCase("red") || message.equalsIgnoreCase("green") || message.equalsIgnoreCase("blue") || message.equalsIgnoreCase("yellow")) {
+            if (!g.state.equals("choosecolor"))
+                return;
+            int color = -1;
+            if (message.equalsIgnoreCase("red"))
+                color = Card.Red;
+            if (message.equalsIgnoreCase("blue"))
+                color = Card.Blue;
+            if (message.equalsIgnoreCase("green"))
+                color = Card.Green;
+            if (message.equalsIgnoreCase("yellow"))
+                color = Card.Yellow;
+            g.discard.peek().suit = color;
+            g.nextTurn(true);
+        }
+    }
+}
+
+class Timer implements Runnable {
+    public Game src;
+    public UnoGame listener;
+    public long waitTime;
+
+    public Timer(Game src, UnoGame ug, long waitTime) {
+        this.src = src;
+        this.listener = ug;
+        this.waitTime = waitTime;
+        jIRC.startThread(this, 1);
+    }
+
+    public void run() {
+        long start = System.currentTimeMillis();
+        while(System.currentTimeMillis() - start < waitTime)
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException ioe) {
+            }
+        listener.timerEvent(src);
+    }
+}
+
+new UnoGame(_inst);

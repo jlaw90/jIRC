@@ -1,0 +1,24 @@
+String base = "http://www.samair.ru/proxy/";
+String[] htm = new String[20];
+htm[0] = "socks.htm";
+for(int i = 1; i < 20; i++)
+    htm[i] = "socks" + (i + 1) + ".htm";
+PrintStream ps = new PrintStream("proxies.lst");
+for(int i = 0; i < htm.length; i++) {
+    URL u = new URL(base + htm[i]);
+    ps.println("## Extracted from \"" + u.toExternalForm() + "\"");
+    URLConnection uc = u.openConnection();
+    BufferedReader br = new BufferedReader(new InputStreamReader(uc.getInputStream()));
+    java.util.regex.Pattern p = java.util.regex.Pattern.compile("\\d+\\.\\d+\\.\\d+\\.\\d+:\\d+");
+    String line;
+    int lineNo = 0;
+    while((line = br.readLine()) != null) {
+        lineNo++;
+        java.util.regex.Matcher m = p.matcher(line);
+        while(m.find())
+            ps.println(line.substring(m.start(), m.end()) + " ## Line #" + lineNo);
+    }
+    Thread.sleep(5000);
+}
+ps.close();
+echo("Enumerated proxies :)");

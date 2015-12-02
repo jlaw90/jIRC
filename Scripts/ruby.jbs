@@ -1,0 +1,36 @@
+public static InputStream in;
+public static OutputStream out;
+public static InputStream err;
+
+public void onMessage(String channel, String sender, String login, String hostname, String message) {
+    if(message.startsWith("`ruby ")) {
+        echo("Writing data...");
+        out.write((message.substring(6) + "\004").getBytes());
+        out.flush();
+        echo("Writed data");
+    } else if(message.equals("`restart")) {
+        echo("(Re)starting ruby...");
+        Process p = Runtime.getRuntime().exec("ruby -n -e 'puts eval($_)'");
+        in = p.getInputStream();
+        out = p.getOutputStream();
+        err = p.getErrorStream();
+        echo("Ruby (re)started!");
+    }
+}
+
+_inst.addListener(this);
+echo("Ruby listener started...");
+
+while(true) {
+    Thread.sleep(10);
+    if(err.available() > 0) {
+        byte[] data = new byte[err.available()];
+        err.read(data);
+        echo(new String(data));
+    }
+    if(in.available() > 0) { 
+        byte[] data = new byte[in.available()];
+        in.read(data);
+        echo(new String(data));
+    }
+}
